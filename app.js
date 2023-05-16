@@ -11,13 +11,15 @@ const TOKEN_KEY = 'x4TDI23nkifaASDOJOASLasd5y'
 const verifyToken = (req, res, next) => {
   const authHeader = req.headers['authorization']
   const token = authHeader && authHeader.split(' ')[1]
-  if (token == null) return res.sendStatus(401)
+  if (token == null) return res.status(401).send('Token Required')
   jwt.verify(token, TOKEN_KEY, (err, user) => {
-    if (err) return res.sendStatus(403).send('Token invalidate')
+    if (err) return res.status(403).send('Token invalidate')
     req.user = user
     next()
   })
 }
+
+let db = []
 
 // Endpoints
 app.post('/register', (req, res) => {
@@ -27,7 +29,7 @@ app.post('/register', (req, res) => {
 
   if (username === 'admin' && password === 'admin') {
     const response = {
-      messaje: 'User created sucesfully',
+      message: 'User created sucesfully',
     }
     res.status(200).json(response)
   } else {
@@ -63,49 +65,44 @@ app.post('/auth', (req, res) => {
   }
 })
 
-app.post('/store/:storename', (req, res) => {
+app.post('/store/:storeName', (req, res) => {
   // Create new store
-  const storename = req.params.storename
+  const storeName = req.params.storeName
+  const findStore = db.some(store => store.name === storeName)
+  if (findStore)
+    return res.status(500).send({
+      message: 'Store already exists',
+    })
   const response = {
-    id: 2,
-    name: storename,
+    id: db.length + 1,
+    name: storeName,
     item: [],
   }
+  db.push(response)
   res.status(200).json(response)
 })
 
-app.get('/store/:storename', (req, res) => {
+app.delete('/store/:storeName', (req, res) => {
+  // Delete a store
+  const storeName = req.params.storeName
+  db = db.filter(store => store.name !== storeName)
+  const response = {
+    message: 'Store deleted',
+  }
+  res.status(200).send(response)
+})
+
+app.get('/store/:storeName', (req, res) => {
   // Get a store
-  const storename = req.params.storename
-  const response = {
-    id: 2,
-    name: storename,
-    item: [],
-  }
+  const storeName = req.params.storeName
+  const response = db.find(store => store.name === storeName)
   res.status(200).json(response)
 })
 
-app.get('/user/:id/store', (req, res) => {
-  const datos = [
-    {
-      id: 1,
-      store: 'DanyCompany',
-      total: 200,
-      date: '2023-05-13',
-    },
-    {
-      id: 2,
-      store: 'example',
-      total: 10,
-      date: '2023-05-13',
-    },
-    {
-      id: 3,
-      store: 'ebeCompany',
-      total: 10,
-      date: '2023-05-13',
-    },
-  ]
+app.get('/stores', verifyToken, (req, res) => {
+  const datos = {
+    stores: db,
+  }
   res.status(200).json(datos)
 })
 
