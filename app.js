@@ -1,9 +1,23 @@
 const express = require('express')
 const cors = require('cors')
+const jwt = require('jsonwebtoken')
 
 const app = express()
 app.use(express.json())
 app.use(cors())
+
+const TOKEN_KEY = 'x4TDI23nkifaASDOJOASLasd5y'
+
+const verifyToken = (req, res, next) => {
+  const authHeader = req.headers['authorization']
+  const token = authHeader && authHeader.split(' ')[1]
+  if (token == null) return res.sendStatus(401)
+  jwt.verify(token, TOKEN_KEY, (err, user) => {
+    if (err) return res.sendStatus(403).send('Token invalidate')
+    req.user = user
+    next()
+  })
+}
 
 // Endpoints
 app.post('/register', (req, res) => {
@@ -26,10 +40,24 @@ app.post('/auth', (req, res) => {
   const username = req.body.username
   const password = req.body.password
   if (username === 'admin' && password === 'admin') {
-    const response = {
-      access_token: 'tokenjwttokenjwttokenjwttokenjwttokenjwttokenjwttokenjwttokenjwt',
+    const data = {
+      id: 333,
+      name: 'Daniel Theran',
+      email: 'd@mail.com',
+      password: '12345',
     }
-    res.status(200).json(response)
+    const token = jwt.sign(
+      {
+        userId: data.id,
+        email: data.email,
+      },
+      TOKEN_KEY,
+      {
+        expiresIn: '2h',
+      }
+    )
+    let auxData = { token }
+    res.status(200).json(auxData)
   } else {
     res.status(400).send('User no found')
   }
@@ -55,7 +83,6 @@ app.get('/store/:storename', (req, res) => {
     item: [],
   }
   res.status(200).json(response)
-
 })
 
 app.get('/user/:id/store', (req, res) => {
