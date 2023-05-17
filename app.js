@@ -1,23 +1,11 @@
 const express = require('express')
 const cors = require('cors')
 const jwt = require('jsonwebtoken')
+const { TOKEN_KEY, verifyToken } = require('./src/modules/token')
 
 const app = express()
 app.use(express.json())
 app.use(cors())
-
-const TOKEN_KEY = 'x4TDI23nkifaASDOJOASLasd5y'
-
-const verifyToken = (req, res, next) => {
-  const authHeader = req.headers['authorization']
-  const token = authHeader && authHeader.split(' ')[1]
-  if (token == null) return res.status(401).send('Token Required')
-  jwt.verify(token, TOKEN_KEY, (err, user) => {
-    if (err) return res.status(403).send('Token invalidate')
-    req.user = user
-    next()
-  })
-}
 
 let db = []
 
@@ -43,10 +31,10 @@ app.post('/auth', (req, res) => {
   const password = req.body.password
   if (username === 'admin' && password === 'admin') {
     const data = {
-      id: 333,
-      name: 'Daniel Theran',
-      email: 'd@mail.com',
-      password: '12345',
+      id: 1,
+      name: 'Administrator',
+      email: 'admin@mail.com',
+      password: 'admin',
     }
     const token = jwt.sign(
       {
@@ -177,7 +165,8 @@ app.put('/item/:name', (req, res) => {
   res.status(200).json(db[storeIndex].items[itemIndex])
 })
 
-app.delete('/item/:name', (req, res) => { // FIX: A este endpoint hay que pasarle un store_id para saber de cual tienda hay que eliminarlo
+app.delete('/item/:name', (req, res) => {
+  // FIX: A este endpoint hay que pasarle un store_id para saber de cual tienda hay que eliminarlo
   // Delete item from a store
   const name = req.params.name
   const itemIndex = db.findIndex(store => store.items.find(item => item.name === name))
@@ -205,12 +194,14 @@ app.get('/items', (req, res) => {
 app.delete('/store/:name', (req, res) => {
   // Delete a store
   const name = req.params.name
-  const storeInd = db.findIndex(store => store.name === name)
-  if (storeInd === -1)
+  const filteredStores = db.filter(store => store.name !== name)
+  // const storeInd = db.findIndex(store => store.name === name)
+  if (filteredStores.length === 0)
     return res.status(500).send({
       message: 'Store not found',
     })
-  db.splice(storeInd, 1)
+  db = filteredStores
+  // db.splice(storeInd, 1)
   res.status(200).send({
     message: 'Store deleted',
   })
