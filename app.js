@@ -191,6 +191,17 @@ app.delete('/item/:name', (req, res) => {
   })
 })
 
+app.get('/items', (req, res) => {
+  // Get all items of db
+  const data = []
+  db.forEach(store => {
+    store.items.forEach(item => data.push(item))
+  })
+  res.status(200).json({
+    items: data,
+  })
+})
+
 app.delete('/store/:name', (req, res) => {
   // Delete a store
   const name = req.params.name
