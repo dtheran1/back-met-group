@@ -149,6 +149,34 @@ app.get('/item/:name', verifyToken, (req, res) => {
   res.status(200).json(item)
 })
 
+app.put('/item/:name', (req, res) => {
+  // Update item in a store
+  const name = req.params.name
+  const price = req.body.price
+  const store_id = req.body.store_id
+
+  const storeIndex = db.findIndex(store => store.id === store_id)
+  if (storeIndex === -1)
+    return res.status(500).send({
+      message: 'Store not found',
+    })
+    // find item in store in all db
+  const itemIndex = db[storeIndex].items.findIndex(item => item.name === name)
+  if (itemIndex === -1)
+    return res.status(500).send({
+      message: 'Item not found',
+    })
+    // update item in store
+    db[storeIndex].items[itemIndex] = {
+      id: db[storeIndex].items[itemIndex].id,
+      name,
+      price,
+      store_id
+    }
+
+  res.status(200).json(db[storeIndex].items[itemIndex])
+})
+
 app.delete('/store/:name', (req, res) => {
   // Delete a store
   const name = req.params.name
