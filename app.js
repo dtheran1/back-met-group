@@ -7,7 +7,62 @@ const app = express()
 app.use(express.json())
 app.use(cors())
 
-let db = []
+let db = [
+  {
+    id: 1,
+    name: 'Store 1',
+    items: [
+      {
+        id: 1,
+        name: 'Item 1',
+        price: 10,
+        store_id: 1,
+      },
+      {
+        id: 2,
+        name: 'Item 2',
+        price: 20,
+        store_id: 1,
+      },
+    ],
+  },
+  {
+    id: 2,
+    name: 'Store 2',
+    items: [
+      {
+        id: 1,
+        name: 'Item 1',
+        price: 10,
+        store_id: 1,
+      },
+      {
+        id: 2,
+        name: 'Item 2',
+        price: 20,
+        store_id: 1,
+      },
+    ],
+  },
+  {
+    id: 3,
+    name: 'Store 3',
+    items: [
+      {
+        id: 1,
+        name: 'Item 1',
+        price: 10,
+        store_id: 1,
+      },
+      {
+        id: 2,
+        name: 'Item 2',
+        price: 20,
+        store_id: 1,
+      },
+    ],
+  },
+]
 
 // Endpoints
 app.post('/register', (req, res) => {
@@ -15,7 +70,7 @@ app.post('/register', (req, res) => {
   const username = req.body.username
   const password = req.body.password
 
-  if (username === 'admin' && password === 'admin') {
+  if (username && password) {
     const response = {
       message: 'User created sucesfully',
     }
@@ -76,9 +131,9 @@ app.post('/store/:name', (req, res) => {
 app.get('/store/:name', (req, res) => {
   // Get a store
   const name = req.params.name
-  const response = db.find(store => store.name === name)
-  if (response) {
-    res.status(200).json(response)
+  const filteredStore = db.find(store => store.name === name)
+  if (filteredStore) {
+    res.status(200).json(filteredStore)
   } else {
     res.status(404).send({
       message: 'Store not found',
@@ -90,13 +145,7 @@ app.get('/stores', verifyToken, (req, res) => {
   const data = {
     stores: db,
   }
-  if (db.length) {
-    res.status(200).json(data)
-  } else {
-    res.status(404).send({
-      message: 'Stores not found',
-    })
-  }
+  res.status(200).json(data)
 })
 
 app.post('/item/:name', (req, res) => {
@@ -195,16 +244,17 @@ app.delete('/store/:name', (req, res) => {
   // Delete a store
   const name = req.params.name
   const filteredStores = db.filter(store => store.name !== name)
-  // const storeInd = db.findIndex(store => store.name === name)
-  if (filteredStores.length === 0)
-    return res.status(500).send({
-      message: 'Store not found',
+
+  if (!filteredStores) {
+    return res.status(400).send({
+      message: 'Stores not found',
     })
+  } else {
+    res.status(200).send({
+      message: 'Store deleted',
+    })
+  }
   db = filteredStores
-  // db.splice(storeInd, 1)
-  res.status(200).send({
-    message: 'Store deleted',
-  })
 })
 
 app.listen(3001, () => {
