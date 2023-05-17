@@ -177,7 +177,7 @@ app.put('/item/:name', (req, res) => {
   res.status(200).json(db[storeIndex].items[itemIndex])
 })
 
-app.delete('/item/:name', (req, res) => {
+app.delete('/item/:name', (req, res) => { // FIX: A este endpoint hay que pasarle un store_id para saber de cual tienda hay que eliminarlo
   // Delete item from a store
   const name = req.params.name
   const itemIndex = db.findIndex(store => store.items.find(item => item.name === name))
