@@ -122,6 +122,13 @@ app.post('/item/:name', (req, res) => {
     return res.status(500).send({
       message: 'Store not found',
     })
+  // find item in store in all db
+  const itemIndex = db[storeIndex].items.findIndex(item => item.name === name)
+  if (itemIndex !== -1)
+    return res.status(500).send({
+      message: 'Item already exists',
+    })
+
   const newItem = {
     id: db[storeIndex].items.length + 1,
     name,
@@ -130,6 +137,16 @@ app.post('/item/:name', (req, res) => {
   }
   db[storeIndex].items.push(newItem)
   res.status(200).json(newItem)
+})
+
+app.get('/item/:name', verifyToken, (req, res) => {
+  // Get item from a store
+  const name = req.params.name
+  const itemIndex = db.findIndex(store => store.items.find(item => item.name === name))
+  if (itemIndex === -1) return res.status(500).send({ message: 'Item not found' })
+
+  const item = db[itemIndex].items.find(item => item.name === name)
+  res.status(200).json(item)
 })
 
 app.delete('/store/:name', (req, res) => {
