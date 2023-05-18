@@ -14,13 +14,13 @@ let db = [
     items: [
       {
         id: 1,
-        name: 'Item 1',
+        name: 'mesa',
         price: 10,
         store_id: 1,
       },
       {
         id: 2,
-        name: 'Item 2',
+        name: 'plato',
         price: 20,
         store_id: 1,
       },
@@ -32,15 +32,15 @@ let db = [
     items: [
       {
         id: 1,
-        name: 'Item 1',
+        name: 'cuchara',
         price: 10,
-        store_id: 1,
+        store_id: 2,
       },
       {
         id: 2,
-        name: 'Item 2',
+        name: 'vaso',
         price: 20,
-        store_id: 1,
+        store_id: 2,
       },
     ],
   },
@@ -50,15 +50,15 @@ let db = [
     items: [
       {
         id: 1,
-        name: 'Item 1',
+        name: 'Nevera',
         price: 10,
-        store_id: 1,
+        store_id: 3,
       },
       {
         id: 2,
-        name: 'Item 2',
+        name: 'Licuadora',
         price: 20,
-        store_id: 1,
+        store_id: 3,
       },
     ],
   },
@@ -223,7 +223,8 @@ app.delete('/item/:name', (req, res) => {
     return res.status(500).send({
       message: 'Item not found',
     })
-  db[itemIndex].items.splice(itemIndex, 1)
+  db[itemIndex].items = db[itemIndex].items.filter(item => item.name !== name)
+
   res.status(200).send({
     message: 'Item deleted',
   })
@@ -247,7 +248,7 @@ app.delete('/store/:name', (req, res) => {
 
   if (!filteredStores) {
     return res.status(400).send({
-      message: 'Stores not found',
+      message: 'Stores not founds',
     })
   } else {
     res.status(200).send({
