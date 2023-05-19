@@ -98,7 +98,9 @@ app.post('/auth', (req, res) => {
   const username = req.body.username
   const password = req.body.password
 
-  const userLogged = registeredUsers.find(user => user.username === username && user.password === password)
+  const userLogged = registeredUsers.find(
+    user => user.username === username && user.password === password
+  )
 
   if (userLogged) {
     const data = {
@@ -155,6 +157,23 @@ app.get('/store/:name', (req, res) => {
       message: 'Store not found',
     })
   }
+})
+
+app.delete('/store/:name', (req, res) => {
+  // Delete a store
+  const name = req.params.name
+  const filteredStores = db.filter(store => store.name !== name)
+
+  if (!filteredStores) {
+    return res.status(400).send({
+      message: 'Stores not founds',
+    })
+  } else {
+    res.status(200).send({
+      message: 'Store deleted',
+    })
+  }
+  db = filteredStores
 })
 
 app.get('/stores', verifyToken, (req, res) => {
@@ -255,23 +274,6 @@ app.get('/items', (req, res) => {
   res.status(200).json({
     items: data,
   })
-})
-
-app.delete('/store/:name', (req, res) => {
-  // Delete a store
-  const name = req.params.name
-  const filteredStores = db.filter(store => store.name !== name)
-
-  if (!filteredStores) {
-    return res.status(400).send({
-      message: 'Stores not founds',
-    })
-  } else {
-    res.status(200).send({
-      message: 'Store deleted',
-    })
-  }
-  db = filteredStores
 })
 
 app.listen(3001, () => {
