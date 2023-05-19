@@ -91,7 +91,7 @@ app.post('/register', (req, res) => {
       res.status(422).json({ message: 'Invalid or missing fields' })
     }
   } catch (error) {
-    res.status(500).json({ message: 'Internal server error' })
+    res.status(500).json({ error: error.message })
   }
 })
 
@@ -122,41 +122,48 @@ app.post('/auth', (req, res) => {
       )
       return res.status(200).json({ token })
     } catch (error) {
-      return res
-        .status(500)
-        .json({ message: 'Something went wrong while signing the token.' })
+      res.status(500).json({ error: error.message })
     }
   }
 })
 
 app.post('/store/:name', (req, res) => {
   // Create new store
-  const name = req.params.name
-  const findStore = db.some(store => store.name === name)
-  if (findStore)
+  try {
+    const { name } = req.params
     // Validamos que no existan mas de una tienda con el mismo nombre
-    return res.status(500).send({
-      message: 'Store already exists',
-    })
-  const newStore = {
-    id: db.length + 1,
-    name: name,
-    items: [],
+    const isStoreExists = db.some(store => store.name === name)
+
+    if (isStoreExists) {
+      return res.status(409).json({
+        message: 'Store already exists',
+      })
+    }
+
+    const newStore = {
+      id: db.length + 1,
+      name,
+      items: [],
+    }
+
+    db.push(newStore)
+
+    return res.status(201).json(newStore)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
   }
-  db.push(newStore)
-  res.status(200).json(newStore)
 })
 
 app.get('/store/:name', (req, res) => {
   // Get a store
-  const name = req.params.name
-  const filteredStore = db.find(store => store.name === name)
-  if (filteredStore) {
-    res.status(200).json(filteredStore)
-  } else {
-    res.status(404).send({
-      message: 'Store not found',
-    })
+  try {
+    const { name } = req.params
+    const filteredStore = db.find(store => store.name === name)
+    filteredStore
+      ? res.status(200).json(filteredStore)
+      : res.status(404).send({ message: 'Store not found' })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
   }
 })
 
@@ -165,14 +172,13 @@ app.delete('/store/:name', async (req, res) => {
   const { name } = req.params
   try {
     const storeToRemove = db.find(store => store.name === name)
-    if (!storeToRemove) {
-      // If store not found, return 404 error
-      return res.status(404).send({ message: 'Store not found' })
-    }
+    // If store not found, return 404 error
+    if (!storeToRemove) return res.status(404).send({ message: 'Store not found' })
+
     db = db.filter(store => store.name !== name)
     res.status(200).send({ message: 'Store deleted' })
   } catch (error) {
-    res.status(500).send({ message: 'Internal server error' })
+    res.status(500).json({ error: error.message })
   }
 })
 
@@ -189,95 +195,106 @@ app.get('/stores', verifyToken, (req, res) => {
 
 app.post('/item/:name', (req, res) => {
   // Add item to a store
-  const name = req.params.name
-  const price = req.body.price
-  const store_id = req.body.store_id
+  try {
+    const { name } = req.params
+    const { price, store_id } = req.body
+    const storeIndex = db.findIndex(store => store.id === store_id)
 
-  const storeIndex = db.findIndex(store => store.id === store_id)
-  if (storeIndex === -1)
-    return res.status(500).send({
-      message: 'Store not found',
-    })
-  // find item in store in all db
-  const itemIndex = db[storeIndex].items.findIndex(item => item.name === name)
-  if (itemIndex !== -1)
-    return res.status(500).send({
-      message: 'Item already exists',
-    })
+    if (storeIndex === -1) {
+      return res.status(404).json({ error: 'Store not found' })
+    }
+    // find item in store in all db
+    const foundItem = db.some(store => store.items.some(item => item.name === name))
+    if (foundItem) {
+      return res.status(409).json({ error: 'Item already exists' })
+    }
 
-  const newItem = {
-    id: db[storeIndex].items.length + 1,
-    name,
-    price,
-    store_id,
+    const newItem = {
+      id: db[storeIndex].items.length + 1,
+      name,
+      price,
+      store_id,
+    }
+
+    db[storeIndex].items.push(newItem)
+    res.status(201).json(newItem)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
   }
-  db[storeIndex].items.push(newItem)
-  res.status(200).json(newItem)
 })
 
 app.get('/item/:name', verifyToken, (req, res) => {
   // Get item from a store
-  const name = req.params.name
-  const itemIndex = db.findIndex(store => store.items.find(item => item.name === name))
-  if (itemIndex === -1) return res.status(500).send({ message: 'Item not found' })
-
-  const item = db[itemIndex].items.find(item => item.name === name)
-  res.status(200).json(item)
+  try {
+    const { name } = req.params
+    const item = db
+      .find(store => store.items.find(item => item.name === name))
+      ?.items.find(item => item.name === name)
+    if (!item) return res.status(404).json({ message: 'Item not found' })
+    res.status(200).json(item)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
 })
 
 app.put('/item/:name', (req, res) => {
   // Update item in a store
-  const name = req.params.name
-  const price = req.body.price
-  const store_id = req.body.store_id
+  try {
+    const { name } = req.params
+    const { price, store_id } = req.body
 
-  const storeIndex = db.findIndex(store => store.id === store_id)
-  if (storeIndex === -1)
-    return res.status(500).send({
-      message: 'Store not found',
-    })
-  // find item in store in all db
-  const itemIndex = db[storeIndex].items.findIndex(item => item.name === name)
-  if (itemIndex === -1)
-    return res.status(500).send({
-      message: 'Item not found',
-    })
-  // update item in store
-  db[storeIndex].items[itemIndex] = {
-    id: db[storeIndex].items[itemIndex].id,
-    name,
-    price,
-    store_id,
+    // find store in db
+    const store = db.find(store => store.id === store_id)
+    if (!store) {
+      return res.status(404).json({ error: 'Store not found' })
+    }
+    // find item in store in store
+    const item = store.items.find(item => item.name === name)
+    if (!item) {
+      return res.status(404).json({ error: 'Item not found' })
+    }
+
+    // update item
+    item.price = price
+    return res.status(200).json(item)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
   }
-
-  res.status(200).json(db[storeIndex].items[itemIndex])
 })
 
 app.delete('/item/:name', (req, res) => {
-  // FIX: A este endpoint hay que pasarle un store_id para saber de cual tienda hay que eliminarlo
   // Delete item from a store
-  const name = req.params.name
-  const itemIndex = db.findIndex(store => store.items.find(item => item.name === name))
-  if (itemIndex === -1)
-    return res.status(500).send({
-      message: 'Item not found',
-    })
-  db[itemIndex].items = db[itemIndex].items.filter(item => item.name !== name)
+  try {
+    const { name } = req.params
+    const storeIndexWhitItem = db.findIndex(store =>
+      store.items.some(item => item.name === name)
+    )
 
-  res.status(200).send({
-    message: 'Item deleted',
-  })
+    if (storeIndexWhitItem === -1) {
+      return res
+        .status(404)
+        .json({ error: `The item "${name}" could not be found in any stores.` })
+    }
+
+    const store = db[storeIndexWhitItem]
+    store.items = store.items.filter(item => item.name !== name)
+    res.status(204).send({ message: 'Item deleted' })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
 })
 
 app.get('/items', (req, res) => {
   // Get all items of db
-  const data = []
-  db.forEach(store => {
-    store.items.forEach(item => data.push(item))
-  })
-  res.status(200).json({
-    items: data,
-  })
+  try {
+    // implementamos flatmap para aplanar los arrays anidados y devolver un solo array de ellos
+    const data = db.flatMap(store => store.items)
+    res.status(200).json({
+      items: data,
+    })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
 })
 
 app.listen(3001, () => {
