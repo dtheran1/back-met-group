@@ -133,7 +133,6 @@ app.get('/stores', verifyToken, (req, res) => {
     const data = {
       stores: db,
     }
-    console.log(data);
     res.status(200).json(data)
   } catch (error) {
     res.status(500).json({ error: error.message })
