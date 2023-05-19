@@ -64,13 +64,26 @@ let db = [
   },
 ]
 
+let registeredUsers = []
+
 // Endpoints
 app.post('/register', (req, res) => {
   //Register
   const username = req.body.username
   const password = req.body.password
 
+  // Validamos que no existan mas de un user con el mismo nombre
+  const findUser = registeredUsers.some(user => user.username === username)
+  if (findUser)
+    return res.status(409).send({
+      message: 'User already exists',
+    })
+
   if (username && password) {
+    registeredUsers.push({
+      username,
+      password,
+    })
     const response = {
       message: 'User created sucesfully',
     }
@@ -84,7 +97,10 @@ app.post('/auth', (req, res) => {
   // Login
   const username = req.body.username
   const password = req.body.password
-  if (username === 'admin' && password === 'admin') {
+
+  const userLogged = registeredUsers.find(user => user.username === username && user.password === password)
+
+  if (userLogged) {
     const data = {
       id: 1,
       name: 'Administrator',
