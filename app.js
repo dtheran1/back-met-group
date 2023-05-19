@@ -1,4 +1,5 @@
 const express = require('express')
+const { v4: uuidv4 } = require('uuid')
 const cors = require('cors')
 const jwt = require('jsonwebtoken')
 const { TOKEN_KEY, verifyToken } = require('./src/modules/token')
@@ -7,62 +8,7 @@ const app = express()
 app.use(express.json())
 app.use(cors())
 
-let db = [
-  {
-    id: 1,
-    name: 'Store 1',
-    items: [
-      {
-        id: 1,
-        name: 'mesa',
-        price: 10,
-        store_id: 1,
-      },
-      {
-        id: 2,
-        name: 'plato',
-        price: 20,
-        store_id: 1,
-      },
-    ],
-  },
-  {
-    id: 2,
-    name: 'Store 2',
-    items: [
-      {
-        id: 1,
-        name: 'cuchara',
-        price: 10,
-        store_id: 2,
-      },
-      {
-        id: 2,
-        name: 'vaso',
-        price: 20,
-        store_id: 2,
-      },
-    ],
-  },
-  {
-    id: 3,
-    name: 'Store 3',
-    items: [
-      {
-        id: 1,
-        name: 'Nevera',
-        price: 10,
-        store_id: 3,
-      },
-      {
-        id: 2,
-        name: 'Licuadora',
-        price: 20,
-        store_id: 3,
-      },
-    ],
-  },
-]
+let db = []
 
 let registeredUsers = []
 
@@ -141,7 +87,7 @@ app.post('/store/:name', (req, res) => {
     }
 
     const newStore = {
-      id: db.length + 1,
+      id: uuidv4(),
       name,
       items: [],
     }
@@ -187,6 +133,7 @@ app.get('/stores', verifyToken, (req, res) => {
     const data = {
       stores: db,
     }
+    console.log(data);
     res.status(200).json(data)
   } catch (error) {
     res.status(500).json({ error: error.message })
@@ -210,7 +157,7 @@ app.post('/item/:name', (req, res) => {
     }
 
     const newItem = {
-      id: db[storeIndex].items.length + 1,
+      id: uuidv4(),
       name,
       price,
       store_id,
