@@ -54,12 +54,11 @@ app.post('/auth', (req, res) => {
   }
 
   if (user) {
-    const { username, password } = user
+    const { username } = user
     try {
       const token = jwt.sign(
         {
           username,
-          password,
         },
         TOKEN_KEY,
         {
