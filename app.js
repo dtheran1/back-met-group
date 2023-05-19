@@ -68,63 +68,64 @@ let registeredUsers = []
 
 // Endpoints
 app.post('/register', (req, res) => {
-  //Register
-  const username = req.body.username
-  const password = req.body.password
+  // Register
+  try {
+    const { username, password } = req.body
 
-  // Validamos que no existan mas de un user con el mismo nombre
-  const findUser = registeredUsers.some(user => user.username === username)
-  if (findUser)
-    return res.status(409).send({
-      message: 'User already exists',
-    })
-
-  if (username && password) {
-    registeredUsers.push({
-      username,
-      password,
-    })
-    const response = {
-      message: 'User created sucesfully',
+    // Validamos que no existan mas de un user con el mismo nombre
+    const userExists = registeredUsers.some(user => user.username === username)
+    if (userExists) {
+      return res.status(409).json({ message: 'User already exists' })
     }
-    res.status(200).json(response)
-  } else {
-    res.status(400).send('Opps! something went wrong, try again.')
+
+    if (username && password) {
+      registeredUsers.push({
+        username,
+        password,
+      })
+      const response = {
+        message: 'User created successfully',
+      }
+      res.status(201).json(response)
+    } else {
+      res.status(422).json({ message: 'Invalid or missing fields' })
+    }
+  } catch (error) {
+    res.status(500).json({ message: 'Internal server error' })
   }
 })
 
 app.post('/auth', (req, res) => {
   // Login
-  const username = req.body.username
-  const password = req.body.password
+  const { username, password } = req.body
 
-  const userLogged = registeredUsers.find(
+  const user = registeredUsers.find(
     user => user.username === username && user.password === password
   )
 
-  if (userLogged) {
-    const data = {
-      id: 1,
-      name: 'Administrator',
-      email: 'admin@mail.com',
-      password: 'admin',
+  if (!user) {
+    return res.status(401).json({ message: 'Invalid username or password.' })
+  }
+
+  if (user) {
+    const { username, password } = user
+    try {
+      const token = jwt.sign(
+        {
+          username,
+          password,
+        },
+        TOKEN_KEY,
+        {
+          expiresIn: '2h',
+        }
+      )
+      return res.status(200).json({ token })
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ message: 'Something went wrong while signing the token.' })
     }
-    const token = jwt.sign(
-      {
-        userId: data.id,
-        email: data.email,
-      },
-      TOKEN_KEY,
-      {
-        expiresIn: '2h',
-      }
-    )
-    let auxData = { token }
-    res.status(200).json(auxData)
-  } else {
-    res.status(400).send({
-      message: 'User no found.',
-    })
   }
 })
 
@@ -159,28 +160,31 @@ app.get('/store/:name', (req, res) => {
   }
 })
 
-app.delete('/store/:name', (req, res) => {
+app.delete('/store/:name', async (req, res) => {
   // Delete a store
-  const name = req.params.name
-  const filteredStores = db.filter(store => store.name !== name)
-
-  if (!filteredStores) {
-    return res.status(400).send({
-      message: 'Stores not founds',
-    })
-  } else {
-    res.status(200).send({
-      message: 'Store deleted',
-    })
+  const { name } = req.params
+  try {
+    const storeToRemove = db.find(store => store.name === name)
+    if (!storeToRemove) {
+      // If store not found, return 404 error
+      return res.status(404).send({ message: 'Store not found' })
+    }
+    db = db.filter(store => store.name !== name)
+    res.status(200).send({ message: 'Store deleted' })
+  } catch (error) {
+    res.status(500).send({ message: 'Internal server error' })
   }
-  db = filteredStores
 })
 
 app.get('/stores', verifyToken, (req, res) => {
-  const data = {
-    stores: db,
+  try {
+    const data = {
+      stores: db,
+    }
+    res.status(200).json(data)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
   }
-  res.status(200).json(data)
 })
 
 app.post('/item/:name', (req, res) => {
